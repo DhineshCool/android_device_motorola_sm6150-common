@@ -11,6 +11,10 @@ LOCAL_SRC_FILES    := etc/fstab_dynamic.qcom
 else
 LOCAL_SRC_FILES    := etc/fstab.qcom
 endif
+ifeq ($(PRODUCT_SHIPPING_API_LEVEL), 30)
+LOCAL_SRC_FILES    := etc/fstab.hardware
+endif
+
 LOCAL_MODULE_PATH  := $(TARGET_OUT_VENDOR_ETC)
 include $(BUILD_PREBUILT)
 

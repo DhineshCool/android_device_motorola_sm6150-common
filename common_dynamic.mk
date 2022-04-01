@@ -15,9 +15,15 @@
 #
 
 # AB Partitions
-AB_OTA_PARTITIONS += \
+ifeq ($(PRODUCT_SHIPPING_API_LEVEL), 30)
+    AB_OTA_PARTITIONS += \
+    vendor_boot \
+    product
+else
+    AB_OTA_PARTITIONS += \
     recovery \
     product
+endif
 
 # Crypto
 PRODUCT_PROPERTY_OVERRIDES += \
@@ -28,6 +34,11 @@ PRODUCT_PROPERTY_OVERRIDES += \
 # Fstab
 PRODUCT_COPY_FILES += \
     $(LOCAL_PATH)/rootdir/etc/fstab_dynamic.qcom:$(TARGET_COPY_OUT_RAMDISK)/fstab.qcom
+
+ifeq ($(PRODUCT_SHIPPING_API_LEVEL), 30)
+PRODUCT_COPY_FILES += \
+    $(LOCAL_PATH)/rootdir/etc/fstab.hardware:$(TARGET_COPY_OUT_VENDOR_RAMDISK)/first_stage_ramdisk/fstab.$(PRODUCT_PLATFORM)
+endif
 
 # Fastbootd
 PRODUCT_PACKAGES += \
