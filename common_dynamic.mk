@@ -17,6 +17,7 @@
 # AB Partitions
 ifeq ($(PRODUCT_SHIPPING_API_LEVEL), 30)
     AB_OTA_PARTITIONS += \
+    system_ext \
     vendor_boot \
     product
 else
@@ -30,15 +31,6 @@ PRODUCT_PROPERTY_OVERRIDES += \
     ro.crypto.dm_default_key.options_format.version=2 \
     ro.crypto.volume.metadata.method=dm-default-key \
     ro.crypto.volume.options=::v2
-
-# Fstab
-PRODUCT_COPY_FILES += \
-    $(LOCAL_PATH)/rootdir/etc/fstab_dynamic.qcom:$(TARGET_COPY_OUT_RAMDISK)/fstab.qcom
-
-ifeq ($(PRODUCT_SHIPPING_API_LEVEL), 30)
-PRODUCT_COPY_FILES += \
-    $(LOCAL_PATH)/rootdir/etc/fstab.hardware:$(TARGET_COPY_OUT_VENDOR_RAMDISK)/first_stage_ramdisk/fstab.$(PRODUCT_PLATFORM)
-endif
 
 # Fastbootd
 PRODUCT_PACKAGES += \

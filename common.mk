@@ -186,7 +186,6 @@ PRODUCT_PACKAGES += \
 
 # Common init scripts
 PRODUCT_PACKAGES += \
-    fstab.qcom \
     init.class_main.sh \
     init.crda.sh \
     init.mdm.sh \
@@ -357,8 +356,8 @@ PRODUCT_PACKAGES += \
     libchrome.vendor
 
 # MotoActions
-PRODUCT_PACKAGES += \
-    MotoActions
+# PRODUCT_PACKAGES += \
+#    MotoActions
 
 # Net
 PRODUCT_PACKAGES += \
