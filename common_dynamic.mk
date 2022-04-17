@@ -19,7 +19,8 @@ ifeq ($(PRODUCT_SHIPPING_API_LEVEL), 30)
     AB_OTA_PARTITIONS += \
     system_ext \
     vendor_boot \
-    product
+    product \
+    vbmeta_system
 else
     AB_OTA_PARTITIONS += \
     recovery \
