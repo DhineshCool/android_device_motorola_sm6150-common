@@ -270,8 +270,8 @@ case "$target" in
         setprop vendor.usb.diag.func.name "ffs"
      ;;
     "holi")
-        qcom_usb_config="diag,serial_cdev,rmnet"
-        qcom_adb_usb_config="diag,serial_cdev,rmnet,adb"
+        qcom_usb_config="diag,serial_cdev,rmnet,dpl,qdss"
+        qcom_adb_usb_config="diag,serial_cdev,rmnet,dpl,qdss,adb"
         bpt_usb_config="diag,serial,rmnet"
         bpt_adb_usb_config="diag,serial,rmnet,adb"
         factory_usb_config="diag,usbnet"

@@ -20,6 +20,12 @@ on init
     chown system log /proc/driver/mmi_annotate
     chmod 0640 /proc/driver/mmi_annotate
 
+on early-init && property:ro.bootmode=mot-factory
+    setprop ro.vendor.mot.factory true
+
+on early-init && property:ro.vendor.build.motfactory=1
+    setprop ro.vendor.mot.factory true
+
 on early-init
     # Need to wait for platform path for UTAGs driver to succeed
     wait /dev/block/platform/soc/${ro.boot.bootdevice}/by-name/hw
@@ -76,8 +82,8 @@ on post-fs && property:ro.vendor.hw.modem_super_image=yes
 
 on post-fs && property:ro.vendor.hw.fsg_super_image=yes
     umount /vendor/fsg
-    mount ext4 /dev/block/bootdevice/by-name/fsg${ro.boot.slot_suffix} /vendor/super_fsg ro nosuid nodev context=u:object_r:fsg_firmware_file:s0
-    mount ext4 loop@/vendor/super_fsg/${ro.vendor.hw.fsg_mount_file} /vendor/fsg ro nosuid nodev context=u:object_r:fsg_firmware_file:s0
+    mount ext4 /dev/block/bootdevice/by-name/fsg${ro.boot.slot_suffix} /vendor/super_fsg ro nosuid nodev context=u:object_r:fsg_file:s0
+    mount ext4 loop@/vendor/super_fsg/${ro.vendor.hw.fsg_mount_file} /vendor/fsg ro nosuid nodev context=u:object_r:fsg_file:s0
 
 on post-fs
     mkdir /mnt/vendor/persist/camera 0755 oem_5004 oem_5004
@@ -318,6 +324,29 @@ on boot
    chown system system /sys/class/capsense/reset
    chown system system /sys/class/capsense/int_state
 
+service vendor.mmi-block-perm /vendor/bin/init.mmi.block_perm.sh
+    class main
+    user root
+    oneshot
+
+service vendor.pstore_annotate /vendor/bin/pstore_annotate.sh build
+    class main
+    user system
+    group log
+    oneshot
+
+service vendor.apanic_copy /vendor/bin/apanic_copy.sh
+    class late_start
+    group log
+    oneshot
+    disabled
+
+service vendor.bl_logs_copy /vendor/bin/apanic_copy.sh -i
+    class late_start
+    group log
+    oneshot
+    disabled
+
 on late-fs-charger
     class_start early_hal
     wait_for_prop hwservicemanager.ready true
@@ -330,11 +359,100 @@ on charger
     trigger early-fs
     trigger fs
     trigger post-fs
-    trigger late-fs-charger
+    trigger late-fs
     trigger post-fs-data
     trigger moto-charger
     class_stop main
     class_stop late_start
+
+service vendor.apanic_annotate /vendor/bin/apanic_save.sh build
+    class late_start
+    group log
+    oneshot
+    disabled
+
+service vendor.batt_health /vendor/bin/batt_health
+    class late_start
+    user oem_5001
+    group oem_5001 cache net_admin log
+    disabled
+
+on property:sys.boot_completed=1
+    start vendor.batt_health
+
+on property:sys.boot_completed=1 && property:ro.vendor.zram.product_swapon=""
+    write /proc/sys/vm/page-cluster 0
+    swapon_all /vendor/etc/fstab.qcom
+    write /proc/sys/vm/swappiness 100
+    setprop sys.sysctl.swappiness 100
+
+on property:sys.boot_completed=1 && property:ro.vendor.bootreason=coldboot
+    start vendor.apanic_copy
+
+on property:ro.vendor.bootreason=watchdog
+    stop surfaceflinger
+    stop zygote
+    stop zygote_secondary
+    stop sensors
+    start vendor.apanic_annotate
+
+on property:ro.vendor.bootreason=pmic_watchdog
+    stop surfaceflinger
+    stop zygote
+    stop zygote_secondary
+    stop sensors
+    start vendor.apanic_annotate
+
+on property:ro.vendor.bootreason=kernel_panic
+    stop surfaceflinger
+    stop zygote
+    stop zygote_secondary
+    stop sensors
+    start vendor.apanic_annotate
+
+on property:ro.vendor.bootreason=hw_warmreset
+    stop surfaceflinger
+    stop zygote
+    stop zygote_secondary
+    stop sensors
+    start vendor.apanic_annotate
+
+on property:persist.vendor.log.aplogd.enable=1
+    start vendor.aplogd
+
+on property:persist.vendor.log.aplogd.enable=0
+    stop vendor.aplogd
+
+service vendor.aplogd /vendor/bin/aplogd
+    class late_start
+    #user log
+    #group log system sdcard_rw sdcard_r media_rw mount
+    # The user and group definitions above are intentionally disabled and left
+    # only as documentation. It actually starts as root and immediately drops
+    # to log plus those groups after preserving CAP_SYS_ADMIN, which is required
+    # for kernel logging.
+    disabled
+
+# from P onwards aplogd cannot read vold.post_fs_data_done so a new property
+# shall be used to allow aplogd checking if FBE has finished /data decryption
+on property:vold.post_fs_data_done=*
+     setprop vendor.vold.post_fs_data_done ${vold.post_fs_data_done}
+
+service vendor.mmi-boot-sh /vendor/bin/init.mmi.boot.sh
+    class core
+    user root
+    oneshot
+
+service vendor.mmi-shutdown-sh /vendor/bin/init.mmi.shutdown.sh
+    class core
+    user root
+    oneshot
+    disabled
+
+# translate to qcom property name in order to keep the consistent with
+# our legacy property
+on property:persist.vendor.qc.sub.rdump.on=*
+    setprop persist.vendor.ssr.enable_ramdumps ${persist.vendor.qc.sub.rdump.on}
 
 # translate MMI property in order to keep the consistent with QCOM
 on property:ro.vendor.hw.dualsim=true
@@ -417,7 +535,6 @@ on property:vendor.hw.touch.status="ready"
 service vendor.charge_only_mode /vendor/bin/charge_only_mode
     user root
     group graphics system input
-    capabilities SYS_BOOT
     disabled
 
 service vendor.thermal-com /vendor/bin/thermal-engine --minimode
