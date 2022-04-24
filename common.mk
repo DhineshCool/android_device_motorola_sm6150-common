@@ -37,15 +37,7 @@ PRODUCT_ENFORCE_RRO_EXCLUDED_OVERLAYS += \
     $(LOCAL_PATH)/overlay-lineage/lineage-sdk \
     $(LOCAL_PATH)/overlay-lineage/packages/apps/Snap
 
-# A/B
-AB_OTA_UPDATER := true
-
-AB_OTA_PARTITIONS += \
-    boot \
-    dtbo \
-    system \
-    vendor \
-    vbmeta
+#AB
 
 AB_OTA_POSTINSTALL_CONFIG += \
     RUN_POSTINSTALL_system=true \
@@ -55,10 +47,6 @@ AB_OTA_POSTINSTALL_CONFIG += \
 
 PRODUCT_PACKAGES += \
     otapreopt_script
-
-ifeq ($(filter %_foles %_parker,$(TARGET_PRODUCT)),)
-$(call inherit-product, device/motorola/sm6150-common/common_dynamic.mk)
-endif
 
 # Properties
 -include $(LOCAL_PATH)/properties.mk
